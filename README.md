@@ -14,6 +14,7 @@ To setup, install Scala, VS Code, Metals, `git` and `scala-cli`. Then
 git clone https://github.com/spamegg1/advent-of-code-2023-scala
 cd advent-of-code-2023-scala
 scala-cli setup-ide .
+code .
 ```
 # Usage
 I setup 25 empty worksheets, one for each day. You can use the `main` branch as a "blank template".
