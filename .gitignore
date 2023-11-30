@@ -26,7 +26,6 @@ build/
 .classpath
 .project
 .settings
-.worksheet
 bin/
 .cache
 
@@ -37,7 +36,6 @@ bin/
 *.iws
 .idea
 .idea_modules
-/.worksheet/
 
 # scala 3
 .tasty
