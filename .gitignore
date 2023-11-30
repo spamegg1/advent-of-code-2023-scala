@@ -1,2 +1,59 @@
+# bloop and metals
+.bloop
+.bsp
+.metals
+project/metals.sbt
+
+# scala-cli
+.scala-build/
+
+# vs code
+.vscode
+
+# sbt
+project/project/
+project/target/
+target/
+dist/*
+lib_managed/
+src_managed/
+project/boot/
+project/plugins/project/
+project/local-plugins.sbt
+
+# eclipse
+build/
+.classpath
+.project
+.settings
+.worksheet
+bin/
+.cache
+
+# intellij idea
+*.log
+*.iml
+*.ipr
+*.iws
+.idea
+.idea_modules
+/.worksheet/
+
+# scala 3
+.tasty
+
+# mac
+.DS_Store
+
+# other
+.history
+.scala_dependencies
+.cache-main
+
+# general
 *.class
 *.log
+*~
+
+# virtual machine crash logs
+hs_err_pid*
