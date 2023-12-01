@@ -39,5 +39,69 @@ In this example, the calibration values of these four lines are 12, 38, 15, and
 
 Consider your entire calibration document. What is the sum of all of the
 calibration values?
-*/
 
+--- Part Two ---
+Your calculation isn't quite right. It looks like some of the digits are
+actually spelled out with letters: one, two, three, four, five, six, seven,
+eight, and nine also count as valid "digits".
+
+Equipped with this new information, you now need to find the real first and last
+digit on each line. For example:
+
+two1nine
+eightwothree
+abcone2threexyz
+xtwone3four
+4nineeightseven2
+zoneight234
+7pqrstsixteen
+
+In this example, the calibration values are 29, 83, 13, 24, 42, 14, and 76.
+Adding these together produces 281.
+
+What is the sum of all of the calibration values?
+ */
+
+val path: os.Path = os.pwd / "01.input.txt"
+val lines: Seq[String] = os.read.lines(path)
+
+// Part 1:
+def calibrationValue(line: String): Int =
+  val numbers = line.filter(_.isDigit)
+  numbers.head.asDigit * 10 + numbers.last.asDigit
+
+lines.map(calibrationValue(_)).sum // 54708
+
+// Part 2:
+val numbers = Map(
+  "one" -> 1,
+  "two" -> 2,
+  "three" -> 3,
+  "four" -> 4,
+  "five" -> 5,
+  "six" -> 6,
+  "seven" -> 7,
+  "eight" -> 8,
+  "nine" -> 9,
+  "1" -> 1,
+  "2" -> 2,
+  "3" -> 3,
+  "4" -> 4,
+  "5" -> 5,
+  "6" -> 6,
+  "7" -> 7,
+  "8" -> 8,
+  "9" -> 9
+)
+
+val regex = "(?=([1-9]|one|two|three|four|five|six|seven|eight|nine))".r
+def lineToValue(line: String): Int =
+  val matches = regex.findAllMatchIn(line).map(_.group(1)).toVector
+  val (first, last) = (numbers(matches.head), numbers(matches.last))
+  first * 10 + last
+
+// Handle overlapping matches
+lineToValue("eighthree") // should be 83 not 88
+lineToValue("sevenine") // should be 79 not 77
+
+lines.map(lineToValue).sum // 54087
