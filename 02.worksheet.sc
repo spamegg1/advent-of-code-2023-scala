@@ -85,18 +85,18 @@ is the sum of the power of these sets?
  */
 
 // Let's over-engineer everything for fun!
-enum Color:
-  case Red, Green, Blue
-import Color.*
-
-// Don't work with strings, convert them to types. Extension methods yay!
-extension (rawColor: String)
-  def toColor: Color = rawColor match
-    case "red"   => Red
-    case "green" => Green
-    case "blue"  => Blue
-
 object DataDefs:
+  enum Color:
+    case Red, Green, Blue
+  import Color.*
+
+  // Don't work with strings, convert them to types. Extension methods yay!
+  extension (rawColor: String)
+    def toColor: Color = rawColor match
+      case "red"   => Red
+      case "green" => Green
+      case "blue"  => Blue
+
   type Count = Int // how many there are of a kind of cube
   type GameID = Int
   case class Cubes(color: Color, count: Count) // e.g. Cubes(Red, 3) = "3 red"
@@ -112,7 +112,7 @@ object DataDefs:
   case class Game(id: GameID, hand: Hand) // e.g. "Game 1: ..." = Game(1, ...)
 
 object Parsing:
-  import DataDefs.*
+  import DataDefs.*, Color.*
 
   // some hands have the colors out of order, or don't have all 3 colors.
   // Add missing colors with 0 count, and in correct order.
@@ -135,11 +135,11 @@ object Parsing:
     addMissingColors(cubes)
 
   // parse strings like "Game 13"
-  def parseGame(rawGame: String): GameID = rawGame match
+  def parseGameId(rawGame: String): GameID = rawGame match
     case s"Game $id" => id.toInt
 
 object GameDefs:
-  import DataDefs.*, Parsing.*
+  import DataDefs.*, Color.*, Parsing.*
 
   // each game has multiple hands, choose highest RGB counts.
   def bestOfAllHands(hands: List[Hand]): Hand =
@@ -157,7 +157,7 @@ object GameDefs:
     val rawData = line.split(": ").toList // "Game 23: ..."
     val rawGame = rawData(0) // "Game 23"
     val rawHands = rawData(1).split("; ").toList // "3 blue, 4 red; ..."
-    val gameId = parseGame(rawGame)
+    val gameId = parseGameId(rawGame)
     val hands = rawHands.map(parseHand(_))
     val bestHand = bestOfAllHands(hands)
     Game(gameId, bestHand)
@@ -178,7 +178,7 @@ Testing.good // true
 Testing.bad // false
 
 object Main:
-  import DataDefs.*
+  import DataDefs.*, Color.*
   val globalLimit: Hand = Hand(
     Cubes(Red, 12),
     Cubes(Green, 13),
