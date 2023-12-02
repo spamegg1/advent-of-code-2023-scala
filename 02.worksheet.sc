@@ -98,7 +98,6 @@ object DataDefs:
       case "blue"  => Blue
 
   type Count = Int // how many there are of a kind of cube
-  type GameID = Int
   case class Cubes(color: Color, count: Count) // e.g. Cubes(Red, 3) = "3 red"
 
   // e.g. "3 blue, 4 red;" = Hand((Red, 4), (Green, 0), (Blue, 3))
@@ -109,19 +108,17 @@ object DataDefs:
         blue.count <= that.blue.count
     val power: Int = red.count * green.count * blue.count // for part 2
 
-  case class Game(id: GameID, hand: Hand) // e.g. "Game 1: ..." = Game(1, ...)
+  type GameID = Int
+  case class Game(id: GameID, hand: Hand) // e.g. "Game 16: ..." = Game(16, ...)
 
 object Parsing:
   import DataDefs.*, Color.*
-
   // some hands have the colors out of order, or don't have all 3 colors.
   // Add missing colors with 0 count, and in correct order.
   def addMissingColors(cubes: List[Cubes]): Hand =
     val red = cubes.find(_.color == Red).getOrElse(Cubes(Red, 0))
-    val green =
-      cubes.find(_.color == Green).getOrElse(Cubes(Green, 0))
-    val blue =
-      cubes.find(_.color == Blue).getOrElse(Cubes(Blue, 0))
+    val green = cubes.find(_.color == Green).getOrElse(Cubes(Green, 0))
+    val blue = cubes.find(_.color == Blue).getOrElse(Cubes(Blue, 0))
     Hand(red, green, blue)
 
   // parse strings like "3 red" or "4 blue" etc.
@@ -146,11 +143,7 @@ object GameDefs:
     val bestRed = hands.map(_.red.count).max
     val bestGreen = hands.map(_.green.count).max
     val bestBlue = hands.map(_.blue.count).max
-    Hand(
-      Cubes(Red, bestRed),
-      Cubes(Green, bestGreen),
-      Cubes(Blue, bestBlue)
-    )
+    Hand(Cubes(Red, bestRed), Cubes(Green, bestGreen), Cubes(Blue, bestBlue))
 
   // convert one line with multiple hands to a game with highest RGB values.
   def lineToGame(line: String): Game =
@@ -164,26 +157,18 @@ object GameDefs:
 
 object Testing:
   import DataDefs.*, GameDefs.*
-
   val testGoodLine = "Game 1: 3 blue, 4 red; 1 red, 2 green, 6 blue; 2 green"
-  val testBadLine =
-    "Game 3: 8 green, 6 blue, 20 red; 5 blue, 4 red, 13 green; 5 green, 1 red"
-
+  val testBadLine = "Game 3: 8 green, 6 blue, 20 red; 5 blue, 4 red, 13 green"
   val goodGame = lineToGame(testGoodLine)
   val badGame = lineToGame(testBadLine)
   val good = goodGame.hand.isLegal(Main.globalLimit)
   val bad = badGame.hand.isLegal(Main.globalLimit)
-
 Testing.good // true
 Testing.bad // false
 
 object Main:
   import DataDefs.*, Color.*
-  val globalLimit: Hand = Hand(
-    Cubes(Red, 12),
-    Cubes(Green, 13),
-    Cubes(Green, 14)
-  )
+  val globalLimit: Hand = Hand(Cubes(Red, 12), Cubes(Green, 13), Cubes(Green, 14))
   val path: os.Path = os.pwd / "02.input.txt"
   val lines: Seq[String] = os.read.lines(path)
 
@@ -195,6 +180,4 @@ Main.lines
   .sum // 2913
 
 // Part 2
-Main.lines
-  .map(GameDefs.lineToGame(_).hand.power)
-  .sum // 55593
+Main.lines.map(GameDefs.lineToGame(_).hand.power).sum // 55593
