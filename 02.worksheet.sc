@@ -125,9 +125,8 @@ object Parsing:
     Hand(red, green, blue)
 
   // parse strings like "3 red" or "4 blue" etc.
-  def parseCubes(rawCube: String): Cubes =
-    val countAndColor = rawCube.split(" ").toList
-    Cubes(countAndColor(1).toColor, countAndColor(0).toInt)
+  def parseCubes(rawCube: String): Cubes = rawCube match
+    case s"$count $color" => Cubes(color.toColor, count.toInt)
 
   // parse strings like "3 blue, 4 red", add missing colors / counts.
   def parseHand(rawHand: String): Hand =
@@ -136,7 +135,8 @@ object Parsing:
     addMissingColors(cubes)
 
   // parse strings like "Game 13"
-  def parseGame(rawGame: String): GameID = rawGame.filter(_.isDigit).toInt
+  def parseGame(rawGame: String): GameID = rawGame match
+    case s"Game $id" => id.toInt
 
 object GameDefs:
   import DataDefs.*, Parsing.*
