@@ -84,70 +84,81 @@ For each game, find the minimum set of cubes that must have been present. What
 is the sum of the power of these sets?
  */
 
+// Let's over-engineer everything for fun!
 enum Color:
   case Red, Green, Blue
 import Color.*
 
+// Don't work with strings, convert them to types. Extension methods yay!
 extension (rawColor: String)
-  def toColor = rawColor match
+  def toColor: Color = rawColor match
     case "red"   => Red
     case "green" => Green
     case "blue"  => Blue
 
 object DataDefs:
-  type Cube = Int
+  type Count = Int // how many there are of a kind of cube
   type GameID = Int
-  case class ColorCube(color: Color, count: Cube)
-  case class Hand(red: ColorCube, green: ColorCube, blue: ColorCube)
-  case class Game(id: GameID, bestHand: Hand):
-    def isLegal(globalLimit: Hand): Boolean =
-      bestHand.red.count <= globalLimit.red.count &&
-        bestHand.green.count <= globalLimit.green.count &&
-        bestHand.blue.count <= globalLimit.blue.count
+  case class Cubes(color: Color, count: Count) // e.g. Cubes(Red, 3) = "3 red"
+
+  // e.g. "3 blue, 4 red;" = Hand((Red, 4), (Green, 0), (Blue, 3))
+  case class Hand(red: Cubes, green: Cubes, blue: Cubes):
+    def isLegal(that: Hand): Boolean = // compare to another hand
+      red.count <= that.red.count &&
+        green.count <= that.green.count &&
+        blue.count <= that.blue.count
+    val power: Int = red.count * green.count * blue.count // for part 2
+
+  case class Game(id: GameID, hand: Hand) // e.g. "Game 1: ..." = Game(1, ...)
 
 object Parsing:
   import DataDefs.*
 
-  def addMissingColors(colorCubes: List[ColorCube]): Hand =
-    val red = colorCubes.find(_.color == Red).getOrElse(ColorCube(Red, 0))
+  // some hands have the colors out of order, or don't have all 3 colors.
+  // Add missing colors with 0 count, and in correct order.
+  def addMissingColors(cubes: List[Cubes]): Hand =
+    val red = cubes.find(_.color == Red).getOrElse(Cubes(Red, 0))
     val green =
-      colorCubes.find(_.color == Green).getOrElse(ColorCube(Green, 0))
+      cubes.find(_.color == Green).getOrElse(Cubes(Green, 0))
     val blue =
-      colorCubes.find(_.color == Blue).getOrElse(ColorCube(Blue, 0))
+      cubes.find(_.color == Blue).getOrElse(Cubes(Blue, 0))
     Hand(red, green, blue)
 
-  def parseColorCube(rawCube: String): ColorCube =
+  // parse strings like "3 red" or "4 blue" etc.
+  def parseCubes(rawCube: String): Cubes =
     val countAndColor = rawCube.split(" ").toList
-    ColorCube(countAndColor(2).toColor, countAndColor(1).toInt)
+    Cubes(countAndColor(1).toColor, countAndColor(0).toInt)
 
+  // parse strings like "3 blue, 4 red", add missing colors / counts.
   def parseHand(rawHand: String): Hand =
-    val matches = rawHand.split(",").toList
-    val colorCubes = matches.map(parseColorCube(_))
-    addMissingColors(colorCubes)
+    val matches = rawHand.split(", ").toList
+    val cubes = matches.map(parseCubes(_))
+    addMissingColors(cubes)
 
-  def parseAllHands(rawHands: List[String]): List[Hand] =
-    rawHands.map(parseHand)
-
+  // parse strings like "Game 13"
   def parseGame(rawGame: String): GameID = rawGame.filter(_.isDigit).toInt
 
 object GameDefs:
   import DataDefs.*, Parsing.*
 
+  // each game has multiple hands, choose highest RGB counts.
   def bestOfAllHands(hands: List[Hand]): Hand =
     val bestRed = hands.map(_.red.count).max
     val bestGreen = hands.map(_.green.count).max
     val bestBlue = hands.map(_.blue.count).max
     Hand(
-      ColorCube(Red, bestRed),
-      ColorCube(Green, bestGreen),
-      ColorCube(Blue, bestBlue)
+      Cubes(Red, bestRed),
+      Cubes(Green, bestGreen),
+      Cubes(Blue, bestBlue)
     )
 
+  // convert one line with multiple hands to a game with highest RGB values.
   def lineToGame(line: String): Game =
-    val rawData = line.split(":").toList
-    val (rawGame, rawHands) = (rawData(0), rawData(1).split(";").toList)
+    val rawData = line.split(": ").toList // "Game 23: ..."
+    val rawGame = rawData(0) // "Game 23"
+    val rawHands = rawData(1).split("; ").toList // "3 blue, 4 red; ..."
     val gameId = parseGame(rawGame)
-    val hands = parseAllHands(rawHands)
+    val hands = rawHands.map(parseHand(_))
     val bestHand = bestOfAllHands(hands)
     Game(gameId, bestHand)
 
@@ -160,33 +171,30 @@ object Testing:
 
   val goodGame = lineToGame(testGoodLine)
   val badGame = lineToGame(testBadLine)
-  val globalLimit: Hand = Hand(
-    ColorCube(Red, 12),
-    ColorCube(Green, 13),
-    ColorCube(Green, 14)
-  )
-  val good = goodGame.isLegal(globalLimit)
-  val bad = badGame.isLegal(globalLimit)
+  val good = goodGame.hand.isLegal(Main.globalLimit)
+  val bad = badGame.hand.isLegal(Main.globalLimit)
 
 Testing.good // true
 Testing.bad // false
 
-// Main problem
-val path: os.Path = os.pwd / "02.input.txt"
-val lines: Seq[String] = os.read.lines(path)
+object Main:
+  import DataDefs.*
+  val globalLimit: Hand = Hand(
+    Cubes(Red, 12),
+    Cubes(Green, 13),
+    Cubes(Green, 14)
+  )
+  val path: os.Path = os.pwd / "02.input.txt"
+  val lines: Seq[String] = os.read.lines(path)
 
 // Part 1
-lines
+Main.lines
   .map(GameDefs.lineToGame(_))
-  .filter(_.isLegal(Testing.globalLimit))
+  .filter(_.hand.isLegal(Main.globalLimit))
   .map(_.id)
   .sum // 2913
 
 // Part 2
-lines
-  .map(GameDefs.lineToGame(_))
-  .map: game =>
-    game.bestHand.red.count *
-      game.bestHand.green.count *
-      game.bestHand.blue.count
-  .sum
+Main.lines
+  .map(GameDefs.lineToGame(_).hand.power)
+  .sum // 55593
