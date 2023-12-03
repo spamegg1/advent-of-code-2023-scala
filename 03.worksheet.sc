@@ -90,7 +90,7 @@ object DataDefs:
   case class Interval(start: Point, end: Point) // a number's start-end positions
   case class Point(x: X, y: Y):
     def isNear(i: Interval): Boolean = // is (x, y) near a number? including diagonally
-      i.start.x - 1 <= x && x <= i.end.x && i.start.y - 1 <= y && y <= i.end.y
+      i.start.x - 1 <= x && x <= i.end.x + 1 && i.start.y - 1 <= y && y <= i.end.y + 1
 
   type PartNumber = Int // sum these for part 1
   case class Part(partNumber: PartNumber, interval: Interval) // a number and its position
@@ -118,7 +118,7 @@ object Parsing:
     while matches.hasNext do
       val number = matches.next()
       val start = Point(matches.start, y)
-      val end = Point(matches.end, y + 1)
+      val end = Point(matches.end - 1, y) // this index is off-by-1, so fix it.
       val part = Part(number.toInt, Interval(start, end))
       numbers.append(part)
     numbers.toSeq
