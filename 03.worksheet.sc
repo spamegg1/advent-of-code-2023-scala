@@ -85,23 +85,21 @@ ratios produces 467835.
 
 What is the sum of all of the gear ratios in your engine schematic?
  */
-
 object DataDefs:
-  type X = Int
-  type Y = Int
-  case class Interval(start: Point, end: Point)
+  type X = Int; type Y = Int
+  case class Interval(start: Point, end: Point) // a number's start-end positions
   case class Point(x: X, y: Y):
-    def isWithin(i: Interval): Boolean = // is (x, y) near? including diagonally
+    def isNear(i: Interval): Boolean = // is (x, y) near a number? including diagonally
       i.start.x - 1 <= x && x <= i.end.x && i.start.y - 1 <= y && y <= i.end.y
 
   type PartNumber = Int // sum these for part 1
-  case class Part(partNumber: PartNumber, interval: Interval)
-  case class Gear(p1: Part, p2: Part):
+  case class Part(partNumber: PartNumber, interval: Interval) // a number and its position
+
+  case class Gear(p1: Part, p2: Part): // a gear is near two parts
     val ratio: Int = p1.partNumber * p2.partNumber // sum these for part 2
 
 object Parsing:
   import DataDefs.*
-
   extension (c: Char)
     def isSymbol: Boolean = !(c.isDigit || c.isLetter || c == '.' || c == ' ')
 
@@ -111,35 +109,31 @@ object Parsing:
       (c, x) <- line.zipWithIndex
       if pred(c)
     yield Point(x, y)
-
   val findAllSymbols = finder(_.isSymbol) // part 1
   val findAsterisks = finder(_ == '*') // part 2
 
-  val numberRegex = "[0-9]+".r
-
   def findNumbersInLine(y: Y, line: String): Seq[Part] =
-    val matches = numberRegex.findAllIn(line)
-    val found = collection.mutable.Queue.empty[Part]
+    val matches = "[0-9]+".r.findAllIn(line)
+    val numbers = collection.mutable.Queue.empty[Part]
     while matches.hasNext do
-      val num = matches.next()
+      val number = matches.next()
       val start = Point(matches.start, y)
       val end = Point(matches.end, y + 1)
-      val part = Part(num.toInt, Interval(start, end))
-      found.append(part)
-    found.toSeq
+      val part = Part(number.toInt, Interval(start, end))
+      numbers.append(part)
+    numbers.toSeq
 
 object PartsAndGears:
   import DataDefs.*, Parsing.*
-
   def findAllParts(lines: Seq[String], symbols: Seq[Point]): Seq[Part] =
     for
       (line, y) <- lines.zipWithIndex
       part <- findNumbersInLine(y, line)
-      if symbols.exists(_.isWithin(part.interval))
+      if symbols.exists(_.isNear(part.interval))
     yield part
 
   def findGear(asterisk: Point, parts: Seq[Part]): Option[Gear] =
-    val nearbyParts = parts.filter(part => asterisk.isWithin(part.interval))
+    val nearbyParts = parts.filter(part => asterisk.isNear(part.interval))
     nearbyParts.length match
       case 2 => Some(Gear(nearbyParts(0), nearbyParts(1)))
       case _ => None
@@ -178,18 +172,13 @@ object Testing:
   val lines = testInput.split("\n").toSeq
   val testResult1 = sumPartNumbers(lines)
   val testResult2 = sumGearRatios(lines)
-
-Testing.testResult1 // 4361
-Testing.testResult2 // 467835
+Testing.testResult1 // part 1: 4361
+Testing.testResult2 // part 2: 467835
 
 object Main:
   import Summing.*
   val lines: Seq[String] = os.read.lines(os.pwd / "03.input.txt")
   val result1 = sumPartNumbers(lines)
   val result2 = sumGearRatios(lines)
-
-// Part 1
-Main.result1 // 514969
-
-// Part 2
-Main.result2 // 78915902
+Main.result1 // Part 1: 514969
+Main.result2 // Part 2: 78915902
