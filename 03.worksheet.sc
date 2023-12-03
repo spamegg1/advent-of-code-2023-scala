@@ -89,12 +89,10 @@ What is the sum of all of the gear ratios in your engine schematic?
 object DataDefs:
   type X = Int
   type Y = Int
-  case class Point(x: X, y: Y):
-    // is (x, y) within an interval? (including diagonally)
-    def isWithin(i: Interval): Boolean =
-      i.start.x - 1 <= x && x <= i.end.x && i.start.y - 1 <= y && y <= i.end.y
-
   case class Interval(start: Point, end: Point)
+  case class Point(x: X, y: Y):
+    def isWithin(i: Interval): Boolean = // is (x, y) near? including diagonally
+      i.start.x - 1 <= x && x <= i.end.x && i.start.y - 1 <= y && y <= i.end.y
 
   type PartNumber = Int // sum these for part 1
   case class Part(partNumber: PartNumber, interval: Interval)
@@ -107,19 +105,15 @@ object Parsing:
   extension (c: Char)
     def isSymbol: Boolean = !(c.isDigit || c.isLetter || c == '.' || c == ' ')
 
-  def findAllSymbols(lines: Seq[String]): Seq[Point] = // for part 1
+  def finder(lines: Seq[String], pred: Char => Boolean): Seq[Point] =
     for
       (line, y) <- lines.zipWithIndex
       (c, x) <- line.zipWithIndex
-      if c.isSymbol
+      if pred(c)
     yield Point(x, y)
 
-  def findAsterisks(lines: Seq[String]): Seq[Point] = // for part 2
-    for
-      (line, y) <- lines.zipWithIndex
-      (c, x) <- line.zipWithIndex
-      if c == '*'
-    yield Point(x, y)
+  def findAllSymbols(lines: Seq[String]) = finder(lines, _.isSymbol) // part 1
+  def findAsterisks(lines: Seq[String]) = finder(lines, _ == '*') // part 2
 
   val numberRegex = "[0-9]+".r
 
@@ -155,6 +149,8 @@ object PartsAndGears:
     val parts = findAllParts(lines, symbols)
     asterisks.flatMap(findGear(_, parts))
 
+object Summing:
+  import PartsAndGears.*, Parsing.*
   def sumPartNumbers(lines: Seq[String]): Int = // for part 1
     val symbols = findAllSymbols(lines)
     val parts = findAllParts(lines, symbols)
@@ -166,7 +162,7 @@ object PartsAndGears:
     gears.map(_.ratio).sum
 
 object Testing:
-  import PartsAndGears.*
+  import Summing.*
   val testInput = """
   |467..114..
   |...*......
@@ -187,7 +183,7 @@ Testing.testResult1 // 4361
 Testing.testResult2 // 467835
 
 object Main:
-  import PartsAndGears.*
+  import Summing.*
   val lines: Seq[String] = os.read.lines(os.pwd / "03.input.txt")
   val result1 = sumPartNumbers(lines)
   val result2 = sumGearRatios(lines)
