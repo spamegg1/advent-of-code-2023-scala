@@ -105,21 +105,21 @@ object Parsing:
   extension (c: Char)
     def isSymbol: Boolean = !(c.isDigit || c.isLetter || c == '.' || c == ' ')
 
-  def finder(lines: Seq[String], pred: Char => Boolean): Seq[Point] =
+  def finder(pred: Char => Boolean)(lines: Seq[String]): Seq[Point] =
     for
       (line, y) <- lines.zipWithIndex
       (c, x) <- line.zipWithIndex
       if pred(c)
     yield Point(x, y)
 
-  def findAllSymbols(lines: Seq[String]) = finder(lines, _.isSymbol) // part 1
-  def findAsterisks(lines: Seq[String]) = finder(lines, _ == '*') // part 2
+  val findAllSymbols = finder(_.isSymbol) // part 1
+  val findAsterisks = finder(_ == '*') // part 2
 
   val numberRegex = "[0-9]+".r
 
   def findNumbersInLine(y: Y, line: String): Seq[Part] =
     val matches = numberRegex.findAllIn(line)
-    val found = collection.mutable.ArrayBuffer.empty[Part]
+    val found = collection.mutable.Queue.empty[Part]
     while matches.hasNext do
       val num = matches.next()
       val start = Point(matches.start, y)
