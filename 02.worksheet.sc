@@ -136,7 +136,7 @@ object Parsing:
     case s"Game $id" => id.toInt
 
 object GameDefs:
-  import DataDefs.*, Color.*, Parsing.*
+  import DataDefs.*, Color.*
 
   // each game has multiple hands, choose highest RGB counts.
   def bestOfAllHands(hands: List[Hand]): Hand =
@@ -150,17 +150,16 @@ object GameDefs:
     val rawData = line.split(": ").toList // "Game 23: ..."
     val rawGame = rawData(0) // "Game 23"
     val rawHands = rawData(1).split("; ").toList // "3 blue, 4 red; ..."
-    val gameId = parseGameId(rawGame)
-    val hands = rawHands.map(parseHand(_))
+    val gameId = Parsing.parseGameId(rawGame)
+    val hands = rawHands.map(Parsing.parseHand(_))
     val bestHand = bestOfAllHands(hands)
     Game(gameId, bestHand)
 
 object Testing:
-  import DataDefs.*, GameDefs.*
   val testGoodLine = "Game 1: 3 blue, 4 red; 1 red, 2 green, 6 blue; 2 green"
   val testBadLine = "Game 3: 8 green, 6 blue, 20 red; 5 blue, 4 red, 13 green"
-  val goodGame = lineToGame(testGoodLine)
-  val badGame = lineToGame(testBadLine)
+  val goodGame = GameDefs.lineToGame(testGoodLine)
+  val badGame = GameDefs.lineToGame(testBadLine)
   val good = goodGame.hand.isLegal(Main.globalLimit)
   val bad = badGame.hand.isLegal(Main.globalLimit)
 Testing.good // true
@@ -171,13 +170,14 @@ object Main:
   val globalLimit: Hand = Hand(Cubes(Red, 12), Cubes(Green, 13), Cubes(Green, 14))
   val path: os.Path = os.pwd / "02.input.txt"
   val lines: Seq[String] = os.read.lines(path)
+  val result1 = lines
+    .map(GameDefs.lineToGame(_))
+    .filter(_.hand.isLegal(globalLimit))
+    .map(_.id)
+    .sum
+  val result2 = lines
+    .map(GameDefs.lineToGame(_).hand.power)
+    .sum
 
-// Part 1
-Main.lines
-  .map(GameDefs.lineToGame(_))
-  .filter(_.hand.isLegal(Main.globalLimit))
-  .map(_.id)
-  .sum // 2913
-
-// Part 2
-Main.lines.map(GameDefs.lineToGame(_).hand.power).sum // 55593
+Main.result1 // Part 1: 2913
+Main.result2 // Part 2: 55593

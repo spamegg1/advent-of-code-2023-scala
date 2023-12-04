@@ -124,11 +124,11 @@ object Parsing:
     numbers.toSeq
 
 object PartsAndGears:
-  import DataDefs.*, Parsing.*
+  import DataDefs.{Point, Part, Gear}
   def findAllParts(lines: Seq[String], symbols: Seq[Point]): Seq[Part] =
     for
       (line, y) <- lines.zipWithIndex
-      part <- findNumbersInLine(y, line)
+      part <- Parsing.findNumbersInLine(y, line)
       if symbols.exists(_.isNear(part.interval))
     yield part
 
@@ -139,24 +139,22 @@ object PartsAndGears:
       case _ => None
 
   def findAllGears(lines: Seq[String], symbols: Seq[Point]): Seq[Gear] =
-    val asterisks = findAsterisks(lines)
+    val asterisks = Parsing.findAsterisks(lines)
     val parts = findAllParts(lines, symbols)
     asterisks.flatMap(findGear(_, parts))
 
 object Summing:
-  import PartsAndGears.*, Parsing.*
   def sumPartNumbers(lines: Seq[String]): Int = // for part 1
-    val symbols = findAllSymbols(lines)
-    val parts = findAllParts(lines, symbols)
+    val symbols = Parsing.findAllSymbols(lines)
+    val parts = PartsAndGears.findAllParts(lines, symbols)
     parts.map(_.partNumber).sum
 
   def sumGearRatios(lines: Seq[String]): Int = // for part 2
-    val symbols = findAllSymbols(lines)
-    val gears = findAllGears(lines, symbols)
+    val symbols = Parsing.findAllSymbols(lines)
+    val gears = PartsAndGears.findAllGears(lines, symbols)
     gears.map(_.ratio).sum
 
 object Testing:
-  import Summing.*
   val testInput = """
   |467..114..
   |...*......
@@ -170,15 +168,14 @@ object Testing:
   |.664.598..""".stripMargin
 
   val lines = testInput.split("\n").toSeq
-  val testResult1 = sumPartNumbers(lines)
-  val testResult2 = sumGearRatios(lines)
+  val testResult1 = Summing.sumPartNumbers(lines)
+  val testResult2 = Summing.sumGearRatios(lines)
 Testing.testResult1 // part 1: 4361
 Testing.testResult2 // part 2: 467835
 
 object Main:
-  import Summing.*
   val lines: Seq[String] = os.read.lines(os.pwd / "03.input.txt")
-  val result1 = sumPartNumbers(lines)
-  val result2 = sumGearRatios(lines)
+  val result1 = Summing.sumPartNumbers(lines)
+  val result2 = Summing.sumGearRatios(lines)
 Main.result1 // Part 1: 514969
 Main.result2 // Part 2: 78915902

@@ -62,7 +62,6 @@ Take a seat in the large pile of colorful cards. How many points are they worth
 in total?
 
 --- Part Two ---
-
 Just as you're about to report your findings to the Elf, one of you realizes
 that the rules have actually been printed on the back of every card this whole
 time.
@@ -122,7 +121,7 @@ object DataDefs:
     val score = math.pow(2, matchCount - 1).toInt // part 1
 
 object Parsing:
-  import DataDefs.*
+  import DataDefs.Card
   def lineToCard(line: String): Card =
     val (id, win, draw) = line match
       case s"Card $i: $w | $d" => (i, w, d)
@@ -131,11 +130,12 @@ object Parsing:
     Card(id.trim.toInt, winning, drawn)
 
 object Summing:
-  import DataDefs.*, Parsing.*, collection.mutable.Map
-  def sumCardPoints(lines: Seq[String]): Int = lines.map(lineToCard(_).score).sum // part1
+  import collection.mutable.Map
+  def sumCardPoints(lines: Seq[String]): Int = // part1
+    lines.map(Parsing.lineToCard(_).score).sum
 
   def processCopies(lines: Seq[String]): Int = // part 2
-    val cards = lines.map(lineToCard(_))
+    val cards = lines.map(Parsing.lineToCard(_))
     val matchesMap = cards.map(card => card.id -> card.matchCount).toMap
     val copiesMap = Map.from((1 to cards.size).map(id => id -> 1))
     for
@@ -147,7 +147,6 @@ object Summing:
     copiesMap.values.sum
 
 object Testing:
-  import Summing.*
   val testInput = """
   |Card 1: 41 48 83 86 17 | 83 86  6 31 17  9 48 53
   |Card 2: 13 32 20 16 61 | 61 30 68 82 17 32 24 19
@@ -156,15 +155,14 @@ object Testing:
   |Card 5: 87 83 26 28 32 | 88 30 70 12 93 22 82 36
   |Card 6: 31 18 13 56 72 | 74 77 10 23 35 67 36 11""".stripMargin
   val lines = testInput.split("\n").filter(_.nonEmpty).toSeq
-  val testScore1 = sumCardPoints(lines)
-  val testScore2 = processCopies(lines)
+  val testScore1 = Summing.sumCardPoints(lines)
+  val testScore2 = Summing.processCopies(lines)
 Testing.testScore1 // part 1: 13
 Testing.testScore2 // part 2: 30
 
 object Main:
-  import Summing.*
   val lines: Seq[String] = os.read.lines(os.pwd / "04.input.txt")
-  val result1 = sumCardPoints(lines)
-  val result2 = processCopies(lines)
+  val result1 = Summing.sumCardPoints(lines)
+  val result2 = Summing.processCopies(lines)
 Main.result1 // part 1: 33950
 Main.result2 // part 2: 14814534
