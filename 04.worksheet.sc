@@ -131,23 +131,19 @@ object Parsing:
     Card(id.trim.toInt, winning, drawn)
 
 object Summing:
-  import DataDefs.*, Parsing.*
+  import DataDefs.*, Parsing.*, collection.mutable.Map
   def sumCardPoints(lines: Seq[String]): Int = lines.map(lineToCard(_).score).sum // part1
 
   def processCopies(lines: Seq[String]): Int = // part 2
     val cards = lines.map(lineToCard(_))
     val matchesMap = cards.map(card => card.id -> card.matchCount).toMap
-    val copiesMap = collection.mutable.Map.empty[CardId, Int]
-    (1 to cards.size).foreach(copiesMap.addOne(_, 1)) // 1 copy of each card at first.
-
-    for cardId <- 1 to cards.size
-    do
-      val cardCopies = copiesMap(cardId) // how many copies of current card
-      val nextCardIds = cardId + 1 to cardId + matchesMap(cardId)
-      for nextCardId <- nextCardIds
-      do // update next cards by how many copies of current card
-        val currentCopyCount = copiesMap(nextCardId)
-        copiesMap.update(nextCardId, currentCopyCount + cardCopies)
+    val copiesMap = Map.from((1 to cards.size).map(id => id -> 1))
+    for
+      cardId <- 1 to cards.size // current card
+      nextCardId <- cardId + 1 to cardId + matchesMap(cardId) // next cards
+    do // update next cards by how many copies of current card
+      val currentCopyCount = copiesMap(nextCardId)
+      copiesMap.update(nextCardId, currentCopyCount + copiesMap(cardId))
     copiesMap.values.sum
 
 object Testing:
