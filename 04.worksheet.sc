@@ -124,11 +124,10 @@ object DataDefs:
 object Parsing:
   import DataDefs.*
   def lineToCard(line: String): Card =
-    val (id, w, d) = line match
+    val (id, win, draw) = line match
       case s"Card $i: $w | $d" => (i, w, d)
-    val win = w.split(" ").filter(_.nonEmpty)
-    val draw = d.split(" ").filter(_.nonEmpty)
-    val (winning, drawn) = (win.map(_.toInt).toSet, draw.map(_.toInt).toSet)
+    val winning = win.split(" ").filter(_.nonEmpty).map(_.toInt).toSet
+    val drawn = draw.split(" ").filter(_.nonEmpty).map(_.toInt).toSet
     Card(id.trim.toInt, winning, drawn)
 
 object Summing:
