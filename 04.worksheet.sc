@@ -142,8 +142,7 @@ object Summing:
       cardId <- 1 to cards.size // current card
       nextCardId <- cardId + 1 to cardId + matchesMap(cardId) // next cards
     do // update next cards by how many copies of current card
-      val currentCopyCount = copiesMap(nextCardId)
-      copiesMap.update(nextCardId, currentCopyCount + copiesMap(cardId))
+      copiesMap.update(nextCardId, copiesMap(nextCardId) + copiesMap(cardId))
     copiesMap.values.sum
 
 object Testing:
