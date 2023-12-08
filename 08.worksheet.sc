@@ -180,8 +180,8 @@ object Main:
   val result1 = 0
   val result2 = 0
 // Main.wasteland.nodes
-Main.result1 // part 1: ???
-Main.result2 // part 2: ???
+Main.result1 // part 1: 11309
+Main.result2 // part 2: 13740108158591
 
 // (TVA,20777,20777)
 // (VBA,16043,16043)
@@ -189,5 +189,3 @@ Main.result2 // part 2: ???
 // (AAA,11309,11309)
 // (DTA,17621,17621)
 // (DVA,13939,13939)
-// 11309
-// 13740108158591
