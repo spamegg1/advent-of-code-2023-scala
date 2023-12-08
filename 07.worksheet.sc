@@ -234,7 +234,7 @@ object Solving:
   import DataDefs.*
   def solve(lines: Seq[String])(using Ordering[Bid]): Long = lines
     .map(Parsing.lineToBid)
-    .sorted
+    .sorted // this is where the magic happens!
     .zipWithIndex
     .map((bid, index) => bid.bid * (index + 1))
     .sum
