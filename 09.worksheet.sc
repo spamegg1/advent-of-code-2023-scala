@@ -132,25 +132,51 @@ Analyze your OASIS report again, this time extrapolating the previous value for
 each history. What is the sum of these extrapolated values?
  */
 object DataDefs:
-  ???
+  type Record = Long
+  type History = Seq[Record]
+  type BinOp = (Record, Record) => Record
 
 object Parsing:
   import DataDefs.*
-  ???
+  // remove .reverse from the end of this to get Part2 result.
+  def parseHistory(line: String): History = line.split(" ").map(_.toLong).toSeq.reverse
+  def parseAll(lines: Seq[String]): Seq[History] = lines.map(parseHistory)
 
 object Solving:
-  ???
+  import DataDefs.*
+  def processOnce(binOp: BinOp)(history: History): History =
+    history.lazyZip(history.tail).map(binOp)
+
+  def processManyTimes(binOp: BinOp)(history: History): List[History] =
+    var current = history
+    var processHistory = List[History](current)
+    while current.exists(_ != 0L) do
+      current = processOnce(binOp)(current)
+      processHistory = current :: processHistory
+    processHistory
+
+  def processAll(binOp: BinOp)(histories: Seq[History]): Seq[List[History]] =
+    histories.map(processManyTimes(binOp))
+
+  def reverseProcess(binOp: BinOp)(processHistory: List[History]) =
+    processHistory.foldLeft(0L)((acc, hist) => binOp(acc, hist.head))
+
+  def reverseAll(binOp: BinOp)(processHistories: Seq[List[History]]) =
+    processHistories.map(reverseProcess(binOp)).sum
 
 object Testing:
-  val testInput = """"""
-  val testResult1 = 0
-  val testResult2 = 0
-Testing.testResult1 // part 1: ???
-Testing.testResult2 // part 2: ???
+  val testInput =
+    """0 3 6 9 12 15
+      |1 3 6 10 15 21
+      |10 13 16 21 30 45""".stripMargin.split("\n").toSeq
+  lazy val histories = Parsing.parseAll(testInput)
+  lazy val processHistories = Solving.processAll(_ - _)(histories)
+  lazy val testResult = Solving.reverseAll(_ + _)(processHistories)
+Testing.testResult // part 1: 114, part2: 2
 
 object Main:
   lazy val lines: Seq[String] = os.read.lines(os.pwd / "09.input.txt")
-  val result1 = 0
-  val result2 = 0
-Main.result1 // part 1: 1479011877
-Main.result2 // part 2: 973
+  lazy val histories = Parsing.parseAll(lines)
+  lazy val processHistories1 = Solving.processAll(_ - _)(histories)
+  lazy val result = Solving.reverseAll(_ + _)(processHistories1)
+Main.result // part 1: 1479011877, part 2: 973
