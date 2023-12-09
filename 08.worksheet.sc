@@ -1,4 +1,3 @@
-import scalax.collection.generic.AbstractDiEdge
 /*
 --- Day 8: Haunted Wasteland ---
 You're still riding a camel across Desert Island when you spot a sandstorm
@@ -98,41 +97,41 @@ import scalax.collection.*, mutable.Graph, edges.{DiEdge, DiEdgeImplicits}
 import edges.labeled.LDiEdge
 
 object DataDefs:
-  enum Rule: // edge labels
+  enum Move: // edge labels
     case Left, Right
-  import Rule.*
+  import Move.*
   type Node = String // node labels
   case class Bond(label: Node, left: Node, right: Node)
-  type Wasteland = Graph[Node, LDiEdge[Node, Rule]]
+  type Wasteland = Graph[Node, LDiEdge[Node, Move]]
 
-  // for sugar: ... ~> ... +: ... ; ~> is given by DiEdgeImplicits.
+  // for infix sugar n1 ~> n2 +: l ; ~> is given by DiEdgeImplicits.
   extension (e: DiEdge[Node])
-    def +:(rule: Rule) = new LDiEdge[Node, Rule]:
-      def label: Rule = rule
+    def +:(move: Move) = new LDiEdge[Node, Move]:
+      def label: Move = move
       def source: Node = e.source
       def target: Node = e.target
 
 object Parsing:
-  import DataDefs.*, Rule.*
+  import DataDefs.*, Move.*
   extension (char: Char)
-    def toRule = char match
+    def toMove = char match
       case 'L' => Left
       case 'R' => Right
 
-  def parseRules(line: String): Seq[Rule] = line.map(_.toRule)
+  def parseMoves(line: String): List[Move] = line.map(_.toMove).toList
 
   def parseBond(line: String): Bond = line match
     case s"$label = ($left, $right)" => Bond(label, left, right)
 
   def parseBonds(lines: Seq[String]): Seq[Bond] = lines.map(parseBond)
 
-  def parseInput(raw: Seq[String]): (Seq[Rule], Seq[Bond]) =
+  def parseInput(raw: Seq[String]): (List[Move], Seq[Bond]) =
     val lines = raw.filter(_.nonEmpty)
-    val (rules, bonds) = (lines(0), lines.drop(1))
-    (parseRules(rules), parseBonds(bonds))
+    val (moves, bonds) = (lines(0), lines.drop(1))
+    (parseMoves(moves), parseBonds(bonds))
 
 object Wasteland:
-  import DataDefs.*, Rule.*
+  import DataDefs.*, Move.*
   def populate(bonds: Seq[Bond]): Wasteland =
     val wasteland: Wasteland = Graph.empty
     bonds.foreach(bond =>
@@ -143,6 +142,20 @@ object Wasteland:
       wasteland += bond.label ~> bond.right +: Right
     )
     wasteland
+
+  def go(node: Node)(move: Move)(using wasteland: Wasteland): Node =
+    wasteland
+      .get(node)
+      .edges
+      .filter(_.label == move)
+      .head
+      .target
+
+  @annotation.tailrec
+  def runMoves(moves: List[Move])(start: Node)(using wasteland: Wasteland): Node =
+    moves match
+      case head :: next => runMoves(next)(go(start)(head))
+      case Nil          => start
 
 object Solving:
   ???
@@ -164,18 +177,22 @@ object Testing:
       |AAA = (BBB, BBB)
       |BBB = (AAA, ZZZ)
       |ZZZ = (ZZZ, ZZZ)""".stripMargin.split("\n").toSeq
-  lazy val (rules1, bonds1) = Parsing.parseInput(testInput1)
-  lazy val (rules2, bonds2) = Parsing.parseInput(testInput2)
+  lazy val (moves1, bonds1) = Parsing.parseInput(testInput1)
+  lazy val (moves2, bonds2) = Parsing.parseInput(testInput2)
   lazy val wasteland1 = Wasteland.populate(bonds1)
   lazy val wasteland2 = Wasteland.populate(bonds2)
   lazy val testResult1 = 0
   lazy val testResult2 = 0
+// given DataDefs.Wasteland = Testing.wasteland1
+// Wasteland.runMoves(Testing.moves1)("AAA")
+// given DataDefs.Wasteland = Testing.wasteland2
+// Wasteland.runMoves(Testing.moves2)("AAA")
 Testing.testResult1 // part 1: ???
 Testing.testResult2 // part 2: ???
 
 object Main:
   val lines: Seq[String] = os.read.lines(os.pwd / "08.input.txt")
-  lazy val (rules, bonds) = Parsing.parseInput(lines)
+  lazy val (moves, bonds) = Parsing.parseInput(lines)
   lazy val wasteland = Wasteland.populate(bonds)
   val result1 = 0
   val result2 = 0
