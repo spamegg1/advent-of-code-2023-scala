@@ -260,8 +260,7 @@ object DataDefs:
           case W => W -> maze(row)(col - 1)
       )
       .toMap
-  case class Distance(coord: Coord, distance: Int)
-  type Loop = List[Distance]
+  type Loop = List[Coord]
 
 object Parsing:
   import DataDefs.*, Exit.*
@@ -281,17 +280,15 @@ object Solving:
   private def findLoop(maze: Maze[Coord])(animal: Coord): Loop =
     var exit: Exit = animal.exits.head
     var next: Coord = animal.neighbors(maze)(exit)
-    var loop = List(Distance(animal, 0))
-    var distance = 1
+    var loop = List(animal)
     while !next.overlaps(animal) do
-      loop = Distance(next, distance) :: loop
-      distance += 1
+      loop = next :: loop
       val (exit1, exit2) = (next.exits.head, next.exits.tail.head)
       exit = if exit.isOpposite(exit1) then exit2 else exit1
       next = next.neighbors(maze)(exit)
     loop
 
-  private def findMaxDistance(loop: Loop): Int = (loop.head.distance + 1) / 2
+  private def findMaxDistance(loop: Loop): Int = loop.size / 2
 
   def solve1(lines: IndexedSeq[String])(animal: Coord): Int =
     val exitMaze = Parsing.parseExits(lines)
