@@ -288,13 +288,11 @@ object Solving:
       next = next.neighbors(maze)(exit)
     loop
 
-  private def findMaxDistance(loop: Loop): Int = loop.size / 2
-
   def solve1(lines: IndexedSeq[String])(animal: Coord): Int =
     val exitMaze = Parsing.parseExits(lines)
     val coordMaze = Parsing.parseCoords(exitMaze)
     val loop = findLoop(coordMaze)(animal)
-    findMaxDistance(loop)
+    loop.size / 2
 
 object Testing:
   import DataDefs.*, Exit.*
