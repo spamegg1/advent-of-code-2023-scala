@@ -277,7 +277,7 @@ object Parsing:
 object Solving:
   import DataDefs.*, Exit.*
 
-  private def findLoop(maze: Maze[Coord])(animal: Coord): Loop =
+  def findLoop(maze: Maze[Coord])(animal: Coord): Loop =
     var exit: Exit = animal.exits.head
     var next: Coord = animal.neighbors(maze)(exit)
     var loop = List(animal)
@@ -288,7 +288,10 @@ object Solving:
       next = next.neighbors(maze)(exit)
     loop
 
-  def solve1(lines: IndexedSeq[String])(animal: Coord): Int =
+  def loopByLines(mazeSize: Int)(loop: Loop): IndexedSeq[Loop] = // part 2?
+    for row <- 0 until mazeSize yield loop.filter(_.row == row)
+
+  def solve1(lines: IndexedSeq[String])(animal: Coord): Int = // part 1
     val exitMaze = Parsing.parseExits(lines)
     val coordMaze = Parsing.parseCoords(exitMaze)
     val loop = findLoop(coordMaze)(animal)
@@ -317,6 +320,10 @@ object Testing:
       |L.L7LFJ|||||FJL7||LJ
       |L7JLJL-JLJLJL--JLJ.L""".stripMargin.split("\n").toIndexedSeq
   lazy val animal2 = Coord(0, 4, List(S, W)) // just look at the input for this.
+  lazy val exitMaze2 = Parsing.parseExits(testInput2)
+  lazy val coordMaze2 = Parsing.parseCoords(exitMaze2)
+  lazy val loop2 = Solving.findLoop(coordMaze2)(animal2)
+  lazy val loopLines = Solving.loopByLines(20)(loop2)
   lazy val testResult2 = 0
 Testing.testResult1 // part 1: 8
 Testing.testResult2 // part 2: 10
