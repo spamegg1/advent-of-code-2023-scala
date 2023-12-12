@@ -199,7 +199,7 @@ object Solving:
 
   // Part 2: memoize
   private def isMatch(springs: Springs)(spring: Spring)(index: Int) = springs
-    .substring(0, index)
+    .take(index)
     .forall(List(spring, '?').contains(_))
 
   private val memo = collection.mutable.Map[(Springs, List[Count]), Long]()
@@ -217,9 +217,9 @@ object Solving:
         val result = (1 to searchRange)
           .filter(index =>
             isMatch(springs)('.')(index) &&
-              isMatch(springs.substring(index))('#')(head)
+              isMatch(springs.drop(index))('#')(head)
           )
-          .map(index => memoize(springs.substring(index + head))(next))
+          .map(index => memoize(springs.drop(index + head))(next))
           .sum
         memo.addOne(key -> result)
         result
