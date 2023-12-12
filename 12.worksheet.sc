@@ -152,7 +152,8 @@ counts?
 import util.matching.Regex
 
 object DataDefs:
-  type Count = Long // size of a contiguous group of broken springs
+  type Count = Int // size of a contiguous group of broken springs
+  type Spring = Char // one spring: . # ?
   type Springs = String // a group of springs
   // enum Condition:
   //   case Operational, Damaged, Unknown
@@ -160,7 +161,7 @@ object DataDefs:
 
 object Parsing:
   import DataDefs.*
-  def parseNumbers(numbers: String): List[Count] = numbers.split(",").map(_.toLong).toList
+  def parseNumbers(numbers: String): List[Count] = numbers.split(",").map(_.toInt).toList
 
   // def parseSprings(springs: String): List[Springs] =
   //   springs.split("""\.""").filter(_.nonEmpty).toList
@@ -171,13 +172,11 @@ object Parsing:
 
   def parseAll(lines: List[String]) = lines.map(parseLine(_))
 
-  def fiveTimes(line: Springs)(count: Int)(separator: String): Springs = // part 2?
-    List.fill(count)(line).mkString(separator)
-
 object Solving:
   import DataDefs.*
 
-  def generate(springs: Springs)(list: List[Springs]): List[Springs] =
+  // Part 1: brute-force, generate all possible matching strings by filling ?s
+  private def generate(springs: Springs)(list: List[Springs]): List[Springs] =
     if springs.isEmpty then list
     else
       val newList = springs.head match
@@ -185,26 +184,53 @@ object Solving:
         case x   => list.map(_.appended(x))
       generate(springs.tail)(newList)
 
-  def matches(list: List[String])(regex: Regex)(counts: List[Count]) = list.view
-    .map(s => regex.findAllMatchIn(s))
-    .map(iterator => iterator.map(m => m.toString.length))
-    .count(_.toList == counts)
+  private def matches(list: List[String])(regex: Regex)(counts: List[Count]) =
+    list.view
+      .map(s => regex.findAllMatchIn(s))
+      .map(iterator => iterator.map(m => m.toString.length))
+      .count(_.toList == counts)
+
+  private val regex = """#+""".r
+
+  private def solveLine(line: (String, List[Count])): Long =
+    matches(generate(line._1)(List("")))(regex)(line._2)
 
   def solve1(lines: List[String]): Long = Parsing.parseAll(lines).map(solveLine).sum
 
-  // Part 2?
-  val regex = """#+""".r
+  // Part 2
+  private def isMatch(springs: Springs)(spring: Spring)(index: Int) = springs
+    .substring(0, index)
+    .forall(List(spring, '?').contains(_))
 
-  def solveLine(line: (String, List[Count])): Long =
-    matches(generate(line._1)(List("")))(regex)(line._2)
+  private val memo = collection.mutable.Map[(Springs, Count), Long]()
+
+  private def memoize(springs: Springs)(counts: List[Count]): Long =
+    val key = (springs, counts.size)
+    (memo.get(key), counts) match
+      case (Some(value), _) => value
+      case (_, Nil) =>
+        val result = if isMatch(springs)('.')(springs.size) then 1L else 0L
+        memo.addOne(key -> result)
+        result
+      case (_, head :: next) =>
+        val searchRange = springs.size - counts.sum - counts.size + 1
+        val result = (1 to searchRange)
+          .filter(index =>
+            isMatch(springs)('.')(index) &&
+              isMatch(springs.substring(index))('#')(head)
+          )
+          .map(index => memoize(springs.substring(index + head))(next))
+          .sum
+        memo.addOne(key, result)
+        result
 
   def solve2OneLine(line: String): Long =
-    val (springs, numbers) = Parsing.parseLine(line)
-    val unfoldedSprings = Parsing.fiveTimes(springs)(5)("?")
-    val unfoldedNumbers = List.fill(5)(numbers).flatten
-    solveLine((unfoldedSprings, unfoldedNumbers))
+    val (springs, counts) = Parsing.parseLine(line)
+    val unfoldedSprings = List.fill(5)(springs).mkString("?")
+    val unfoldedCounts = List.fill(5)(counts).flatten
+    memoize("." + unfoldedSprings)(unfoldedCounts)
 
-  def solve2(lines: List[String]): Long = 0
+  def solve2(lines: List[String]): Long = lines.map(solve2OneLine).sum
 
 object Testing:
   lazy val lines =
@@ -222,6 +248,7 @@ Testing.result2 // part 2: 525152
 object Main:
   lazy val lines = os.read.lines(os.pwd / "12.input.txt").toList
   lazy val result1 = Solving.solve1(lines)
+  // lazy val result2 = Solving.solve2OneLine(lines.head)
   lazy val result2 = Solving.solve2(lines)
 // Main.result1 // part 1: 7090
 Main.result2 // part 2: 6792010726878
