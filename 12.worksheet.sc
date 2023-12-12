@@ -197,15 +197,15 @@ object Solving:
 
   def solve1(lines: List[String]): Long = Parsing.parseAll(lines).map(solveLine).sum
 
-  // Part 2
+  // Part 2: memoize
   private def isMatch(springs: Springs)(spring: Spring)(index: Int) = springs
     .substring(0, index)
     .forall(List(spring, '?').contains(_))
 
-  private val memo = collection.mutable.Map[(Springs, Count), Long]()
+  private val memo = collection.mutable.Map[(Springs, List[Count]), Long]()
 
   private def memoize(springs: Springs)(counts: List[Count]): Long =
-    val key = (springs, counts.size)
+    val key = (springs, counts)
     (memo.get(key), counts) match
       case (Some(value), _) => value
       case (_, Nil) =>
@@ -221,7 +221,7 @@ object Solving:
           )
           .map(index => memoize(springs.substring(index + head))(next))
           .sum
-        memo.addOne(key, result)
+        memo.addOne(key -> result)
         result
 
   def solve2OneLine(line: String): Long =
