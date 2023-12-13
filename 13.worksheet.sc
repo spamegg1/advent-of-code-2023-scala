@@ -88,27 +88,147 @@ Find the line of reflection in each of the patterns in your notes. What number
 do you get after summarizing all of your notes?
 
 --- Part Two ---
+You resume walking through the valley of mirrors and - SMACK! - run directly
+into one. Hopefully nobody was watching, because that must have been pretty
+embarrassing.
+
+Upon closer inspection, you discover that every mirror has exactly one smudge:
+  exactly one . or # should be the opposite type.
+
+In each pattern, you'll need to locate and fix the smudge that causes a
+different reflection line to be valid. (The old reflection line won't
+necessarily continue being valid after the smudge is fixed.)
+
+Here's the above example again:
+#.##..##.
+..#.##.#.
+##......#
+##......#
+..#.##.#.
+..##..##.
+#.#.##.#.
+
+#...##..#
+#....#..#
+..##..###
+#####.##.
+#####.##.
+..##..###
+#....#..#
+
+The first pattern's smudge is in the top-left corner. If the top-left # were
+instead ., it would have a different, horizontal line of reflection:
+1 ..##..##. 1
+2 ..#.##.#. 2
+3v##......#v3
+4^##......#^4
+5 ..#.##.#. 5
+6 ..##..##. 6
+7 #.#.##.#. 7
+
+With the smudge in the top-left corner repaired, a new horizontal line of
+reflection between rows 3 and 4 now exists. Row 7 has no corresponding reflected
+row and can be ignored, but every other row matches exactly: row 1 matches
+row 6, row 2 matches row 5, and row 3 matches row 4.
+
+In the second pattern, the smudge can be fixed by changing the fifth symbol on
+row 2 from . to #:
+1v#...##..#v1
+2^#...##..#^2
+3 ..##..### 3
+4 #####.##. 4
+5 #####.##. 5
+6 ..##..### 6
+7 #....#..# 7
+
+Now, the pattern has a different horizontal line of reflection between rows 1
+and 2.
+
+Summarize your notes as before, but instead use the new different reflection
+lines. In this example, the first pattern's new horizontal line has 3 rows above
+it and the second pattern's new horizontal line has 1 row above it, summarizing
+to the value 400.
+
+In each pattern, fix the smudge and find the different line of reflection. What
+number do you get after summarizing the new reflection line in each pattern in
+your notes?
  */
 object DataDefs:
-  ???
+  type Row = Int
+  type Col = Int
+
+  extension (opts: List[Option[Int]])
+    def sumOptions: Int = opts.foldLeft(0): (acc, opt) =>
+      opt match
+        case Some(value) => value + acc
+        case None        => acc
+
+  type Terrain = Char
+  type Valley = Vector[Vector[Terrain]]
+
+  extension (valley: Valley)
+    def rows: Valley = valley
+    def cols: Valley = valley.transpose
+
+    def checkSymmetry(rowOrCol: Int): Boolean = // work on rows. For cols, use transpose
+      val reflectionSize = math.min(rowOrCol, valley.size - rowOrCol)
+      val topHalf = valley.drop(rowOrCol - reflectionSize).take(reflectionSize)
+      val botHalf = valley.drop(rowOrCol).take(reflectionSize)
+      topHalf == botHalf.reverse
+
+    def findReflection: Option[Int] = // work on rows. For cols, use transpose
+      (for
+        rowOrCol <- 0 until valley.size - 1
+        if valley(rowOrCol) == valley(rowOrCol + 1)
+        if checkSymmetry(rowOrCol + 1) // problem uses 1-indexed
+      yield rowOrCol + 1).headOption
+
+    def findHorizontalReflection: Option[Row] = rows.findReflection
+    def findVerticalReflection: Option[Col] = cols.findReflection
 
 object Parsing:
   import DataDefs.*
-  ???
+
+  def parseValley(lines: String): Valley =
+    lines.split("\n").map(_.toVector).toVector
+
+  def parseFile(file: String): List[Valley] =
+    file.split("\n\n").toList.map(parseValley(_))
 
 object Solving:
-  ???
+  import DataDefs.*
+
+  def solve1(file: String): Int =
+    val valleys = Parsing.parseFile(file)
+    val horizontalReflections = valleys.map(_.findHorizontalReflection)
+    val verticalReflections = valleys.map(_.findVerticalReflection)
+    horizontalReflections.sumOptions * 100 + verticalReflections.sumOptions
 
 object Testing:
-  lazy val testInput = """"""
-  lazy val testResult1 = 0
+  lazy val testInput =
+    """#.##..##.
+      |..#.##.#.
+      |##......#
+      |##......#
+      |..#.##.#.
+      |..##..##.
+      |#.#.##.#.
+      |
+      |#...##..#
+      |#....#..#
+      |..##..###
+      |#####.##.
+      |#####.##.
+      |..##..###
+      |#....#..#""".stripMargin
+  lazy val testResult1 = Solving.solve1(testInput)
   lazy val testResult2 = 0
-Testing.testResult1 // part 1: ???
+Testing.testResult1 // part 1: 405
 Testing.testResult2 // part 2: ???
 
 object Main:
-  lazy val lines = os.read.lines(os.pwd / "13.input.txt").toList
-  lazy val result1 = 0
+  lazy val file = os.read(os.pwd / "13.input.txt")
+  lazy val result1 = Solving.solve1(file)
   lazy val result2 = 0
-Main.result1 // part 1: ???
+Main.result1 // part 1: 33728
 Main.result2 // part 2: ???
