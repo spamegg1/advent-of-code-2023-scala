@@ -154,37 +154,35 @@ number do you get after summarizing the new reflection line in each pattern in
 your notes?
  */
 object DataDefs:
-  type Row = Int
-  type Col = Int
-
-  extension (opts: List[Option[Int]])
-    def sumOptions: Int = opts.foldLeft(0): (acc, opt) =>
-      opt match
-        case Some(value) => value + acc
-        case None        => acc
-
   type Terrain = Char
-  type Valley = Vector[Vector[Terrain]]
+
+  type Row = Vector[Terrain]
+  extension (row: Row) def countDifferences(that: Row): Int = row.zip(that).count(_ != _)
+
+  type Valley = Vector[Row]
 
   extension (valley: Valley)
-    def rows: Valley = valley
-    def cols: Valley = valley.transpose
+    def rows = valley
+    def cols = valley.transpose
 
-    def checkSymmetry(rowOrCol: Int): Boolean = // work on rows. For cols, use transpose
-      val reflectionSize = math.min(rowOrCol, valley.size - rowOrCol)
-      val topHalf = valley.drop(rowOrCol - reflectionSize).take(reflectionSize)
-      val botHalf = valley.drop(rowOrCol).take(reflectionSize)
-      topHalf == botHalf.reverse
+    def differences(that: Valley): Int = valley
+      .zip(that)
+      .map((row1, row2) => row1.countDifferences(row2))
+      .sum
 
-    def findReflection: Option[Int] = // work on rows. For cols, use transpose
-      (for
-        rowOrCol <- 0 until valley.size - 1
-        if valley(rowOrCol) == valley(rowOrCol + 1)
-        if checkSymmetry(rowOrCol + 1) // problem uses 1-indexed
-      yield rowOrCol + 1).headOption
+    def differsBy(that: Valley)(smudges: Int): Boolean = differences(that) == smudges
 
-    def findHorizontalReflection: Option[Row] = rows.findReflection
-    def findVerticalReflection: Option[Col] = cols.findReflection
+    def reflections(smudges: Int): Seq[Int] =
+      for
+        row <- 1 until valley.size
+        (top, bot) = valley.splitAt(row)
+        if top.reverse.differsBy(bot)(smudges)
+      yield row
+
+    def allReflections(smudges: Int): Int =
+      val horizontal = rows.reflections(smudges)
+      val vertical = cols.reflections(smudges)
+      horizontal.map(_ * 100).sum + vertical.sum
 
 object Parsing:
   import DataDefs.*
@@ -198,11 +196,10 @@ object Parsing:
 object Solving:
   import DataDefs.*
 
-  def solve1(file: String): Int =
-    val valleys = Parsing.parseFile(file)
-    val horizontalReflections = valleys.map(_.findHorizontalReflection)
-    val verticalReflections = valleys.map(_.findVerticalReflection)
-    horizontalReflections.sumOptions * 100 + verticalReflections.sumOptions
+  def solve(file: String)(smudge: Int): Int = Parsing
+    .parseFile(file)
+    .map(_.allReflections(smudge))
+    .sum
 
 object Testing:
   lazy val testInput =
@@ -221,14 +218,14 @@ object Testing:
       |#####.##.
       |..##..###
       |#....#..#""".stripMargin
-  lazy val testResult1 = Solving.solve1(testInput)
-  lazy val testResult2 = 0
+  lazy val testResult1 = Solving.solve(testInput)(0)
+  lazy val testResult2 = Solving.solve(testInput)(1)
 Testing.testResult1 // part 1: 405
-Testing.testResult2 // part 2: ???
+Testing.testResult2 // part 2: 400
 
 object Main:
   lazy val file = os.read(os.pwd / "13.input.txt")
-  lazy val result1 = Solving.solve1(file)
-  lazy val result2 = 0
+  lazy val result1 = Solving.solve(file)(0)
+  lazy val result2 = Solving.solve(file)(1)
 Main.result1 // part 1: 33728
-Main.result2 // part 2: ???
+Main.result2 // part 2: 28235
