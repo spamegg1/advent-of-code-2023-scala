@@ -154,7 +154,7 @@ number do you get after summarizing the new reflection line in each pattern in
 your notes?
  */
 object DataDefs:
-  type Terrain = Char
+  type Terrain = '.' | '#' // value types yay!
 
   type Row = Vector[Terrain]
   extension (row: Row) def countDifferences(that: Row): Int = row.zip(that).count(_ != _)
@@ -162,8 +162,8 @@ object DataDefs:
   type Valley = Vector[Row]
 
   extension (valley: Valley)
-    def rows = valley
-    def cols = valley.transpose
+    def rows: Valley = valley
+    def cols: Valley = valley.transpose
 
     def differences(that: Valley): Int = valley
       .zip(that)
@@ -187,8 +187,12 @@ object DataDefs:
 object Parsing:
   import DataDefs.*
 
-  def parseValley(lines: String): Valley =
-    lines.split("\n").map(_.toVector).toVector
+  def parseValley(lines: String): Valley = lines
+    .split("\n")
+    .view
+    .map(_.collect[Terrain] { case t: Terrain => t }) // value types yay!
+    .map(_.toVector)
+    .toVector
 
   def parseFile(file: String): List[Valley] =
     file.split("\n\n").toList.map(parseValley(_))

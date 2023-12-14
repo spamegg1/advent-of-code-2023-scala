@@ -94,7 +94,7 @@ Simultaneously start on every node that ends with A. How many steps does it take
 before you're only on nodes that end with Z?
  */
 import scalax.collection.*, mutable.Graph, edges.{DiEdge, DiEdgeImplicits}
-import edges.labeled.LDiEdge
+import edges.multilabeled.LDiEdge
 
 object DataDefs:
   enum Move: // edge labels
@@ -187,6 +187,7 @@ object Testing:
 // Wasteland.runMoves(Testing.moves1)("AAA")
 // given DataDefs.Wasteland = Testing.wasteland2
 // Wasteland.runMoves(Testing.moves2)("AAA")
+Testing.wasteland1
 Testing.testResult1 // part 1: ???
 Testing.testResult2 // part 2: ???
 
