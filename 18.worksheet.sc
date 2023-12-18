@@ -102,137 +102,80 @@ object DataDefs:
   enum Dir:
     case U, D, L, R
   import Dir.*
+
   extension (s: String)
     def toDir: Dir = s match
-      case "U" => U
-      case "D" => D
-      case "L" => L
-      case "R" => R
+      case "U" | "3" => U
+      case "D" | "1" => D
+      case "L" | "2" => L
+      case "R" | "0" => R
 
-  type Color = String
-  case class Dig(dir: Dir, size: Int, color: Color)
+  case class Dig(dir: Dir, size: Long)
 
-  type Ground = Char
-  type Row = Int
-  type Col = Int
-  case class Pos(var row: Row, var col: Col, var ground: Ground):
-    def dig: Unit = ground = '#'
-    def shiftBy(r: Row, c: Col): Unit =
-      row = row - r
-      col = col - r
-
-  enum State:
-    case Outside, Entering, Inside, Leaving
-  import State.*
-
-  extension (row: Seq[Pos])
-    def rayCast: Int =
-      var col = 0
-      var result = 0
-      var prev = '.'
-      // 0: Outside -> 1: Boundary -> 2: Inside -> 3: Boundary -> 4: Outside ...
-      var state = Outside
-      while col < row.size do
-        val ground = row(col).ground
-        (ground, state) match
-          case ('#', Outside)  => result += 1; state = Entering
-          case ('#', Entering) => result += 1
-          case ('#', Inside)   => result += 1; state = Leaving
-          case ('#', Leaving)  => result += 1; state = Outside
-          case ('.', Outside)  =>
-          case ('.', Entering) => result += 1; state = Inside
-          case ('.', Inside)   => result += 1
-          case ('.', Leaving)  => state = Outside
-          case _               =>
-        col += 1
-      result
-
-  case class Trench(dir: Dir, start: Pos, end: Pos):
-    lazy val minRow = math.min(start.row, end.row)
-    lazy val maxRow = math.max(start.row, end.row)
-    lazy val minCol = math.min(start.col, end.col)
-    lazy val maxCol = math.max(start.col, end.col)
-    def shiftBy(row: Row, col: Col): Unit =
-      start.shiftBy(row, col)
-      end.shiftBy(row, col)
-
-  case class Grid(grid: Seq[Seq[Pos]], rows: Int, cols: Int):
-    def digTrench(trench: Trench): Unit = trench.dir match
-      case U =>
-        for row <- trench.end.row to trench.start.row
-        do grid(row)(trench.start.col).dig
-      case D =>
-        for row <- trench.start.row to trench.end.row
-        do grid(row)(trench.start.col).dig
-      case L =>
-        for col <- trench.end.col to trench.start.col
-        do grid(trench.start.row)(col).dig
-      case R =>
-        for col <- trench.start.col to trench.end.col
-        do grid(trench.start.row)(col).dig
-
-    def area: Int = grid.map(_.rayCast).sum
+  type Row = Long
+  type Col = Long
+  case class Pos(row: Row, col: Col):
+    def digOne(dig: Dig): Pos = dig.dir match
+      case U => Pos(row - dig.size, col)
+      case D => Pos(row + dig.size, col)
+      case L => Pos(row, col - dig.size)
+      case R => Pos(row, col + dig.size)
 
 object Parsing:
   import DataDefs.*, Dir.*
-  private def parseDig(line: String): Dig = line match
-    case s"$dir $size (#$rgb)" => Dig(dir.toDir, size.toInt, rgb)
+  def parseDig1(line: String): Dig = line match
+    case s"$dir $size (#$color)" => Dig(dir.toDir, size.toLong)
 
-  def parseDigs(lines: List[String]): List[Dig] = lines.map(parseDig(_))
+  def parseDig2(line: String): Dig = line match
+    case s"$dir $size (#$color)" =>
+      Dig(color.drop(5).toDir, Integer.parseInt(color.take(5), 16)) // hex = base 16
 
 object Solving:
   import DataDefs.*, Dir.*
-  private def digOne(start: Pos)(dig: Dig): Trench = dig.dir match
-    case U => Trench(U, start, Pos(start.row - dig.size, start.col, '#'))
-    case D => Trench(D, start, Pos(start.row + dig.size, start.col, '#'))
-    case L => Trench(L, start, Pos(start.row, start.col - dig.size, '#'))
-    case R => Trench(R, start, Pos(start.row, start.col + dig.size, '#'))
 
   @annotation.tailrec
-  private def digAll(start: Pos)(digs: List[Dig])(trenches: List[Trench]): List[Trench] =
-    if digs.isEmpty then trenches
+  private def digAll(start: Pos)(digs: List[Dig])(posts: List[Pos]): List[Pos] =
+    if digs.isEmpty then posts
     else
-      val dig = digs.head
-      val trench = digOne(start)(dig)
-      digAll(trench.end)(digs.tail)(trench :: trenches)
+      val end = start.digOne(digs.head)
+      digAll(end)(digs.tail)(end :: posts)
 
-  private def adjustTrenchCoordinates(trenches: List[Trench]): Unit =
-    val minCol = trenches.map(_.minCol).min
-    val minRow = trenches.map(_.minRow).min
-    trenches.foreach(_.shiftBy(minRow, minCol))
+  private val start = Pos(0, 0) // irrelevant, result is same for any start pos
 
-  private def makeGrid(trenches: List[Trench]): Grid =
-    val rows = trenches.map(_.maxRow).max + 1
-    val cols = trenches.map(_.maxCol).max + 1
-    val g =
-      for row <- 0 until rows
-      yield for col <- 0 until cols
-      yield Pos(row, col, '.')
-    val grid = Grid(g, rows, cols)
-    trenches.foreach(grid.digTrench(_))
-    grid
+  private def shoelace(posts: List[Pos]): Long = // shoelace theorem / algorithm
+    val shiftedPosts = posts.tail :+ posts.head
+    posts
+      .zip(shiftedPosts)
+      .map:
+        case (Pos(x1, y1), Pos(x2, y2)) => (y1 + y2) * (x1 - x2)
+      .sum / 2
 
-  private val start = Pos(0, 0, '#')
+  private def perimeter(digs: List[Dig]): Long = digs.map(_.size).sum + 1
 
-  def solve1(lines: List[String]): Int =
-    val digs = Parsing.parseDigs(lines)
-    val trenches = digAll(start)(digs)(Nil)
-    adjustTrenchCoordinates(trenches)
-    val grid = makeGrid(trenches)
-    grid.area
+  // Shoelace uses cartesian coordinates, problem uses integer coordinates.
+  // This causes a difference between problem's area and shoelace area.
+  // For example, digging from (0,0) to (0,6) gives a Cartesian length of 6,
+  // but for the sake of the problem that should count as 7,
+  // since both endpoints are included: #######
+  // So we can calculate the perimeter, add its half, plus 1 (because off by 1).
+  private def solve(parseFun: List[String] => List[Dig])(lines: List[String]): Long =
+    val digs = parseFun(lines)
+    val posts = digAll(start)(digs)(Nil)
+    shoelace(posts) + perimeter(digs) / 2 + 1
 
-  def solve2(lines: List[String]): Int = 0
+  def solve1 = solve(_.map(Parsing.parseDig1(_)))
+  def solve2 = solve(_.map(Parsing.parseDig2(_)))
 
 object Testing:
   private lazy val lines = os.read.lines(os.pwd / "18.test.input.txt").toList
   lazy val result1 = Solving.solve1(lines)
   lazy val result2 = Solving.solve2(lines)
 Testing.result1 // part 1: 62
-// Testing.result2 // part 2: 952408144115
+Testing.result2 // part 2: 952408144115
 
 object Main:
   private lazy val lines = os.read.lines(os.pwd / "18.input.txt").toList
   lazy val result1 = Solving.solve1(lines)
   lazy val result2 = Solving.solve2(lines)
 Main.result1 // part 1: 36807
-// Main.result2 // part 2: ???
+Main.result2 // part 2: 48797603984357
