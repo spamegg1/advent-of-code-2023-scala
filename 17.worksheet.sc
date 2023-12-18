@@ -1,16 +1,16 @@
 /*
 --- Day 17: Clumsy Crucible ---
-The lava starts flowing rapidly once the Lava Production Facility is operational.
-As you leave, the reindeer offers you a parachute, allowing you to quickly reach
-Gear Island.
+The lava starts flowing rapidly once the Lava Production Facility is
+operational. As you leave, the reindeer offers you a parachute, allowing you to
+quickly reach Gear Island.
 
 As you descend, your bird's-eye view of Gear Island reveals why you had trouble
 finding anyone on your way up: half of Gear Island is empty, but the half below
 you is a giant factory city!
 
-You land near the gradually-filling pool of lava at the base of your new lavafall.
-Lavaducts will eventually carry the lava throughout the city, but to make use of
-it immediately, Elves are loading it into large crucibles on wheels.
+You land near the gradually-filling pool of lava at the base of your new
+lavafall. Lavaducts will eventually carry the lava throughout the city, but to
+make use of it immediately, Elves are loading it into large crucibles on wheels.
 
 The crucibles are top-heavy and pushed by hand. Unfortunately, the crucibles
 become very difficult to steer at high speeds, and so it can be hard to go in a
@@ -23,8 +23,8 @@ doesn't require the crucible to go in a straight line for too long.
 
 Fortunately, the Elves here have a map (your puzzle input) that uses traffic
 patterns, ambient temperature, and hundreds of other parameters to calculate
-exactly how much heat loss can be expected for a crucible entering any particular
-city block.
+exactly how much heat loss can be expected for a crucible entering any
+particular city block.
 
 For example:
 2413432311323
@@ -46,7 +46,7 @@ loss if the crucible enters that block. The starting point, the lava pool, is
 the top-left city block; the destination, the machine parts factory, is the
 bottom-right city block. (Because you already start in the top-left block, you
 don't incur that block's heat loss unless you leave that block and then return
-    to it.)
+to it.)
 
 Because it is difficult to keep the top-heavy crucible going in a straight line
 for very long, it can move at most three blocks in a single direction before it
@@ -173,7 +173,8 @@ object DataDefs:
   case class Traversal(
       visited: Map[Tile, Loss],
       frontier: Queue[Tile],
-      lastThree: Queue[Direction],
+      prevDirection: Direction,
+      howManyStraight: Int,
       var loss: Loss
   )
 
@@ -189,7 +190,8 @@ object Parsing:
     (grid, grid.start, grid.end)
 
 object Solving:
-  import DataDefs.*
+  import DataDefs.*, Direction.*
+
   def populate(grid: Grid): MyGraph =
     val myGraph: MyGraph = Graph.empty
     for
@@ -199,7 +201,7 @@ object Solving:
     do myGraph += tile ~ neighbor // ~ provided by UnDiEdgeImplicits
     myGraph
 
-  def emptyTraversal = Traversal(Map.empty, Queue.empty, Queue.empty, 0)
+  def emptyTraversal = Traversal(Map.empty, Queue.empty, E, -1, 0)
 
   def dijkstra(graph: MyGraph)(traversal: Traversal)(start: Tile)(end: Tile): Loss =
     0
@@ -231,4 +233,4 @@ object Main:
   lazy val result1 = Solving.solve1(lines)
   lazy val result2 = Solving.solve2(lines)
 Main.result1 // part 1: 814
-Main.result2 // part 2: ???
+Main.result2 // part 2: 974
