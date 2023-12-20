@@ -98,12 +98,14 @@ Consider only your list of workflows; the list of part ratings that the Elves
 wanted you to sort is no longer relevant. How many distinct combinations of
 ratings will be accepted by the Elves' workflows?
  */
+import collection.mutable.Queue
+
 object DataDefs:
-  enum Rating(rating: Long):
-    case X(rating: Long) extends Rating(rating)
-    case M(rating: Long) extends Rating(rating)
-    case A(rating: Long) extends Rating(rating)
-    case S(rating: Long) extends Rating(rating)
+  enum Rating(rating: Int):
+    case X(rating: Int) extends Rating(rating)
+    case M(rating: Int) extends Rating(rating)
+    case A(rating: Int) extends Rating(rating)
+    case S(rating: Int) extends Rating(rating)
   import Rating.*
 
   type Label = String
@@ -121,9 +123,24 @@ object DataDefs:
     case Less(category: Rating, flow: Flow)
     case More(category: Rating, flow: Flow)
     case Unconditional(flow: Flow)
+
+    def opposite: Rule = this match
+      case Less(category, flow) =>
+        category match
+          case X(rating) => More(X(rating - 1), flow)
+          case M(rating) => More(M(rating - 1), flow)
+          case A(rating) => More(A(rating - 1), flow)
+          case S(rating) => More(S(rating - 1), flow)
+      case More(category, flow) =>
+        category match
+          case X(rating) => Less(X(rating + 1), flow)
+          case M(rating) => Less(M(rating + 1), flow)
+          case A(rating) => Less(A(rating + 1), flow)
+          case S(rating) => Less(S(rating + 1), flow)
+      case Unconditional(flow) => this
   import Rule.*
 
-  case class Workflow(label: Label, rules: List[Rule])
+  case class Workflow(flow: Flow, rules: List[Rule])
 
   extension (s: String)
     def toFlow: Flow = s match
@@ -134,13 +151,13 @@ object DataDefs:
     def toRating: Rating = s match
       case s"$category.$rating" =>
         category match
-          case "x" => X(rating.toLong)
-          case "m" => M(rating.toLong)
-          case "a" => A(rating.toLong)
-          case "s" => S(rating.toLong)
+          case "x" => X(rating.toInt)
+          case "m" => M(rating.toInt)
+          case "a" => A(rating.toInt)
+          case "s" => S(rating.toInt)
 
-  case class Part(x: X, m: M, a: A, s: S):
-    lazy val totalRating = x.rating + m.rating + a.rating + s.rating
+  case class Part(x: X, m: M, a: A, s: S): // part 1
+    lazy val totalRating: Long = x.rating + m.rating + a.rating + s.rating
 
     private def processRule(rule: Rule): Option[Flow] = rule match
       case Less(category, flow) =>
@@ -158,18 +175,50 @@ object DataDefs:
       case Unconditional(flow) => Some(flow)
 
     def processRules(rules: List[Rule]): Flow = rules match
-      case head :: next =>
-        processRule(head) match
-          case None       => processRules(next)
-          case Some(flow) => flow
-      case Nil => Rejected // this case should not happen due to Unconditional
+      case head :: next => processRule(head).getOrElse(processRules(next))
+      case Nil          => Rejected // this case should not happen due to Unconditional
+
+  // Part 2
+  extension (r: Range)
+    def cap(that: Range): Range =
+      val lower = math.max(r.start, that.start)
+      val higher = math.min(r.end, that.end)
+      Range(lower, higher)
+
+  case class Ranges(xs: Range, ms: Range, as: Range, ss: Range, flow: Flow):
+    lazy val product: Long = xs.size.toLong * ms.size * as.size * ss.size
+    def isEmpty: Boolean = xs.isEmpty || ms.isEmpty || as.isEmpty || ss.isEmpty
+
+    private def processRule(rule: Rule): Ranges = rule match
+      case Less(category, flow) =>
+        category match
+          case X(rating) => Ranges(xs.cap(Range(1, rating)), ms, as, ss, flow)
+          case M(rating) => Ranges(xs, ms.cap(Range(1, rating)), as, ss, flow)
+          case A(rating) => Ranges(xs, ms, as.cap(Range(1, rating)), ss, flow)
+          case S(rating) => Ranges(xs, ms, as, ss.cap(Range(1, rating)), flow)
+      case More(category, flow) =>
+        category match
+          case X(rating) => Ranges(xs.cap(Range(rating + 1, 4001)), ms, as, ss, flow)
+          case M(rating) => Ranges(xs, ms.cap(Range(rating + 1, 4001)), as, ss, flow)
+          case A(rating) => Ranges(xs, ms, as.cap(Range(rating + 1, 4001)), ss, flow)
+          case S(rating) => Ranges(xs, ms, as, ss.cap(Range(rating + 1, 4001)), flow)
+      case Unconditional(flow) => Ranges(xs, ms, as, ss, flow)
+
+    def processRules(rules: List[Rule])(acc: Queue[Ranges]): Queue[Ranges] =
+      rules match
+        case head :: next =>
+          val normal = processRule(head)
+          val opposite = processRule(head.opposite)
+          acc.enqueue(normal)
+          opposite.processRules(next)(acc)
+        case Nil => acc
 
 object Parsing:
   import DataDefs.*, Rule.*, Flow.*, Rating.*
 
   private def parsePart(line: String): Part = line match
     case s"{x=$x,m=$m,a=$a,s=$s}" =>
-      Part(X(x.toLong), M(m.toLong), A(a.toLong), S(s.toLong))
+      Part(X(x.toInt), M(m.toInt), A(a.toInt), S(s.toInt))
 
   def parseParts(lines: List[String]): List[Part] = lines.map(parsePart(_))
 
@@ -185,16 +234,17 @@ object Parsing:
     case s"$label{$stuff}" =>
       val parsedStuff = stuff.split(",").toList
       val (listOfRules, flow) = (parsedStuff.init, parsedStuff.last)
-      Workflow(label, parseRules(listOfRules) :+ Unconditional(flow.toFlow))
+      Workflow(label.toFlow, parseRules(listOfRules) :+ Unconditional(flow.toFlow))
 
   def parseWorkflows(lines: List[String]): Map[Flow, Workflow] = lines
     .map(parseWorkflow(_))
-    .map(workflow => Name(workflow.label) -> workflow)
+    .map(workflow => workflow.flow -> workflow)
     .toMap
 
 object Solving:
   import DataDefs.*, Rule.*, Flow.*, Rating.*
 
+  // Part 1
   private def processPart(workflows: Map[Flow, Workflow])(part: Part): (Part, Flow) =
     var flow = Name("in")
     while flow.isNamed do
@@ -202,18 +252,38 @@ object Solving:
       flow = part.processRules(workflow.rules)
     (part, flow)
 
-  private def processParts(workflows: Map[Flow, Workflow])(parts: List[Part]) = parts
-    .map(processPart(workflows))
-    .filter(_._2 == Accepted)
-    .map(_._1.totalRating)
-    .sum
+  private def processParts(workflows: Map[Flow, Workflow])(parts: List[Part]): Long =
+    parts
+      .map(processPart(workflows))
+      .filter(_._2 == Accepted)
+      .map(_._1.totalRating)
+      .sum
+
+  // Part 2
+  private val start =
+    Ranges(Range(1, 4001), Range(1, 4001), Range(1, 4001), Range(1, 4001), Name("in"))
+
+  private def processRanges(workflows: Map[Flow, Workflow]): Long =
+    var result = 0L
+    var ranges = start
+    val queue = Queue(start)
+    while queue.nonEmpty do
+      ranges = queue.dequeue()
+      if ranges.flow == Accepted then result += ranges.product
+      else if ranges.flow == Rejected || ranges.isEmpty then ()
+      else
+        val workflow = workflows(ranges.flow)
+        queue ++= ranges.processRules(workflow.rules)(Queue[Ranges]())
+    result
 
   def solve1(lines1: List[String])(lines2: List[String]): Long =
     val workflows = Parsing.parseWorkflows(lines1)
     val parts = Parsing.parseParts(lines2)
     processParts(workflows)(parts)
 
-  def solve2(lines: List[String]): Long = 0L
+  def solve2(lines: List[String]): Long =
+    val workflows = Parsing.parseWorkflows(lines)
+    processRanges(workflows)
 
 object Testing:
   private lazy val workflows = os.read.lines(os.pwd / "19.test.input.txt").toList
@@ -221,7 +291,7 @@ object Testing:
   lazy val result1 = Solving.solve1(workflows)(parts)
   lazy val result2 = Solving.solve2(workflows)
 // Testing.result1 // part 1: 19114
-Testing.result2 // part 2: 167.409.079.868.000
+// Testing.result2 // part 2: 167.409.079.868.000
 
 object Main:
   private lazy val workflows = os.read.lines(os.pwd / "19.input.txt").toList
@@ -229,4 +299,4 @@ object Main:
   lazy val result1 = Solving.solve1(workflows)(parts)
   lazy val result2 = Solving.solve2(workflows)
 // Main.result1 // part 1: 348378
-Main.result2 // part 2: ???
+// Main.result2 // part 2: 121.158.073.425.385

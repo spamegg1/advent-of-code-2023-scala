@@ -9,19 +9,20 @@ object Parsing:
   import DataDefs.*
   ???
 
-object Summing:
+object Solving:
+  import DataDefs.*
   ???
 
 object Testing:
-  val testInput = """"""
-  val testResult1 = 0
-  val testResult2 = 0
-Testing.testResult1 // part 1: ???
-Testing.testResult2 // part 2: ???
+  // private val lines = os.read.lines(os.pwd / "23.test.input.txt")
+  lazy val result1 = 0
+  lazy val result2 = 0
+Testing.result1 // part 1: ???
+Testing.result2 // part 2: ???
 
 object Main:
-  // val lines: Seq[String] = os.read.lines(os.pwd / "05.input.txt")
-  val result1 = 0
-  val result2 = 0
+  // private val lines = os.read.lines(os.pwd / "23.input.txt")
+  lazy val result1 = 0
+  lazy val result2 = 0
 Main.result1 // part 1: ???
 Main.result2 // part 2: ???
