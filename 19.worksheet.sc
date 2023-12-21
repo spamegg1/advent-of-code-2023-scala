@@ -290,13 +290,13 @@ object Testing:
   private lazy val parts = os.read.lines(os.pwd / "19.test.input.2.txt").toList
   lazy val result1 = Solving.solve1(workflows)(parts)
   lazy val result2 = Solving.solve2(workflows)
-// Testing.result1 // part 1: 19114
-// Testing.result2 // part 2: 167.409.079.868.000
+Testing.result1 // part 1: 19114
+Testing.result2 // part 2: 167.409.079.868.000
 
 object Main:
   private lazy val workflows = os.read.lines(os.pwd / "19.input.txt").toList
   private lazy val parts = os.read.lines(os.pwd / "19.input.2.txt").toList
   lazy val result1 = Solving.solve1(workflows)(parts)
   lazy val result2 = Solving.solve2(workflows)
-// Main.result1 // part 1: 348378
-// Main.result2 // part 2: 121.158.073.425.385
+Main.result1 // part 1: 348378
+Main.result2 // part 2: 121.158.073.425.385

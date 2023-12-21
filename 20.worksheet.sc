@@ -164,9 +164,19 @@ multiply the total number of low pulses sent by the total number of high pulses
 sent?
 
 --- Part Two ---
+The final machine responsible for moving the sand down to Island Island has a
+module attached named rx. The machine turns on when a single low pulse is sent
+to rx.
+
+Reset all modules to their default states. Waiting for all pulses to be fully
+handled after each button press, what is the fewest number of button presses
+required to deliver a single low pulse to the module named rx?
  */
 object DataDefs:
-  ???
+  enum Module:
+    case Broadcast(name: String)
+    case FlipFlop(name: String)
+    case Conjunction(name: String)
 
 object Parsing:
   import DataDefs.*
@@ -177,15 +187,16 @@ object Solving:
   ???
 
 object Testing:
-  private val lines = os.read.lines(os.pwd / "20.test.input.txt")
+  private val lines1 = os.read.lines(os.pwd / "20.test.input.txt")
+  private val lines2 = os.read.lines(os.pwd / "20.test.input.2.txt")
   lazy val result1 = 0
   lazy val result2 = 0
-Testing.result1 // part 1: ???
-Testing.result2 // part 2: ???
+Testing.result1 // part 1: 32000000
+Testing.result2 // part 2: 11687500
 
 object Main:
   private val lines = os.read.lines(os.pwd / "20.input.txt")
   lazy val result1 = 0
   lazy val result2 = 0
-Main.result1 // part 1: ???
-Main.result2 // part 2: ???
+Main.result1 // part 1: 839775244
+Main.result2 // part 2: 207787533680413
