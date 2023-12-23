@@ -134,7 +134,11 @@ are supporting which other bricks:
     Brick G isn't supporting any bricks.
 
 Your first task is to figure out which bricks are safe to disintegrate. A brick
-can be safely disintegrated if, after removing it, no other bricks would fall further directly downward. Don't actually disintegrate any bricks - just determine what would happen if, for each brick, only that brick were disintegrated. Bricks can be disintegrated even if they're completely surrounded by other bricks; you can squeeze between bricks if you need to.
+can be safely disintegrated if, after removing it, no other bricks would fall
+further directly downward. Don't actually disintegrate any bricks - just
+determine what would happen if, for each brick, only that brick were
+disintegrated. Bricks can be disintegrated even if they're completely surrounded
+by other bricks; you can squeeze between bricks if you need to.
 
 In this example, the bricks can be disintegrated as follows:
 
@@ -158,28 +162,90 @@ consider disintegrating a single brick; how many bricks could be safely chosen
 as the one to get disintegrated?
 
 --- Part Two ---
+Disintegrating bricks one at a time isn't going to be fast enough. While it
+might sound dangerous, what you really need is a chain reaction.
+
+You'll need to figure out the best brick to disintegrate. For each brick,
+determine how many other bricks would fall if that brick were disintegrated.
+
+Using the same example as above:
+
+    Disintegrating brick A would cause all 6 other bricks to fall.
+    Disintegrating brick F would cause only 1 other brick, G, to fall.
+
+Disintegrating any other brick would cause no other bricks to fall. So, in this
+example, the sum of the number of other bricks that would fall as a result of
+disintegrating each brick is 7.
+
+For each brick, determine how many other bricks would fall if that brick were
+disintegrated. What is the sum of the number of other bricks that would fall?
  */
 object DataDefs:
-  ???
+  case class Brick(var xs: Range, var ys: Range, var zs: Range): // inclusive
+    val height: Int = zs.end - zs.start
+
+    def isSupportedBy(other: Brick): Boolean =
+      xs.intersect(other.xs).nonEmpty && ys.intersect(other.ys).nonEmpty
+
+    def isAbove(other: Brick): Boolean =
+      isSupportedBy(other) && zs.start == other.zs.end + 1
+
+    def setZ(newZ: Int): Unit = zs = Range(newZ, newZ + height)
 
 object Parsing:
   import DataDefs.*
-  ???
+
+  private def parseBrick(line: String): Brick = line match
+    case s"$x1,$y1,$z1~$x2,$y2,$z2" =>
+      Brick(
+        Range.inclusive(x1.toInt, x2.toInt),
+        Range.inclusive(y1.toInt, y2.toInt),
+        Range.inclusive(z1.toInt, z2.toInt)
+      )
+
+  def parseBricks(lines: Seq[String]): Seq[Brick] = lines.map(parseBrick(_))
 
 object Solving:
   import DataDefs.*
-  ???
+
+  private def settle(bricks: Seq[Brick]): Seq[Brick] = bricks
+    .sortBy(_.zs.start)
+    .foldLeft(Seq[Brick]()): (settledPile, brick) =>
+      val supporters = settledPile.filter(brick.isSupportedBy)
+      val newZ = supporters.map(_.zs.end).maxOption.getOrElse(0) + 1
+      brick.setZ(newZ)
+      settledPile :+ brick
+
+  private def groupByZaxis(bricks: Seq[Brick]): List[Seq[Brick]] =
+    bricks.groupBy(_.zs.start).toList.sortBy(_._1).map(_._2)
+
+  private def disintegrable(settledBricks: Seq[Brick]): Seq[Brick] =
+    for
+      (brick, index) <- settledBricks.zipWithIndex
+      rest = settledBricks.drop(index + 1)
+      aboveBrick = rest.filter(_.isAbove(brick))
+      if aboveBrick.forall(supported =>
+        settledBricks.exists(other => supported.isAbove(other) && other != brick)
+      )
+    yield brick
+
+  def solve1(lines: Seq[String]) =
+    val bricks = Parsing.parseBricks(lines)
+    val settled = settle(bricks)
+    disintegrable(settled).size
 
 object Testing:
-  // private val lines = os.read.lines(os.pwd / "22.test.input.txt")
-  lazy val result1 = 0
+  val lines = os.read.lines(os.pwd / "22.test.input.txt")
+  lazy val result1 = Solving.solve1(lines)
   lazy val result2 = 0
-Testing.result1 // part 1: ???
+Testing.result1 // part 1: 5
 Testing.result2 // part 2: ???
 
 object Main:
-  // private val lines = os.read.lines(os.pwd / "22.input.txt")
-  lazy val result1 = 0
+  private val lines = os.read.lines(os.pwd / "22.input.txt")
+  lazy val result1 = Solving.solve1(lines)
   lazy val result2 = 0
-Main.result1 // part 1: ???
-Main.result2 // part 2: ???
+Main.result1 // part 1: 512
+Main.result2 // part 2: 98167
+
+Seq('a', 'b', 'c').zipWithIndex.take(0)
