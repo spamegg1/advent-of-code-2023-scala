@@ -216,9 +216,6 @@ object Solving:
       brick.setZ(newZ)
       settledPile :+ brick
 
-  private def groupByZaxis(bricks: Seq[Brick]): List[Seq[Brick]] =
-    bricks.groupBy(_.zs.start).toList.sortBy(_._1).map(_._2)
-
   private def disintegrable(settledBricks: Seq[Brick]): Seq[Brick] =
     for
       (brick, index) <- settledBricks.zipWithIndex
@@ -247,5 +244,3 @@ object Main:
   lazy val result2 = 0
 Main.result1 // part 1: 512
 Main.result2 // part 2: 98167
-
-Seq('a', 'b', 'c').zipWithIndex.take(0)
